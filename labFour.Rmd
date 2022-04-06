@@ -6,6 +6,9 @@ output: pdf_document
 
 ```{r library}
 library(leaps)
+library(ggplot2)
+library(glmnet)
+library(pspline)
 ```
 
 
@@ -37,7 +40,7 @@ $$
 
 ## Two
 
-```{r two}
+```{r two_set}
 data[, 3] <- data[, 1]^2
 data[, 4] <- data[, 1]^3
 data[, 5] <- data[, 1]^4
@@ -79,7 +82,77 @@ $$
 y = `r round(fourth[1], digits = 2)` + `r round(fourth[2], digits = 2)` x + `r round(fourth[3], digits = 2)` x^2 + `r round(fourth[4], digits = 2)` x^3 + `r round(fourth[5], digits = 2)` x^4
 $$
 
+### d
+```{r plots with full}
+x4 <- x^4
+xmat2 <- cbind(ones, x, x2, x3, x4)
+f4 <- xmat2 %*% fourth
+f3 <- xmat %*% third
 
 
+ggplot() + geom_line(aes(x, f3), colour = "red") + geom_line(aes(x, f4), colour = "orange") + geom_line(aes(x, fx)) +
+  geom_point(aes(x, y))  + geom_line(aes(x, fk), colour = "green") + theme_bw()
+```
+
+In short my ggplot looks far superior to your base r plot...
+
+## 3
+
+```{r three_set}
+frw_sub <- leaps::regsubsets(as.matrix(data[, -2]), as.matrix(data[,2]), method = "forward")
+bwd_sub <- leaps::regsubsets(as.matrix(data[, -2]), as.matrix(data[,2]), method = "backward")
+
+frw_sum <- summary(frw_sub)
+bwd_sum <- summary(bwd_sub)
+```
+
+### a
+
+cp forward the fifth model is the best `r frw_sum$cp[5]`
+
+cp backward the fifth model is best here too `r bwd_sum$cp[5]`
 
 
+### b
+
+bic forward the fourth model is best here `r frw_sum$bic[4]`
+
+bic backward the fourth model is best here too `r bwd_sum$bic[4]`
+
+
+### c 
+
+adjr^2 forward the fifth model is best here with `r frw_sum$adjr2[5]`
+
+adjr^2 backward the fifth model is also best here with `r bwd_sum$adjr2[5]`
+
+
+## 4
+
+```{r four}
+my_glm <- glmnet(as.matrix(data[,-2]), data[, 2], alpha = 1, lambda = 0.5)
+cv_base <- cv.glmnet(as.matrix(data[,-2]), data[, 2], alpha = 1)
+cv_base$lambda.min
+
+lassmod <- predict(my_glm, s=cv_base$lambda.min, type="coefficients" )
+
+coefs <- c(1.185542486, -0.174601519, 0.001026240, 0.005451162)
+
+x7 <- x^7
+x9 <- x^9
+xmat3 <- cbind(ones, x2, x7, x9)
+
+fk <- xmat3 %*% coefs
+
+```
+
+
+## 5
+
+```{r five}
+sm.spline(x, y) # w/df of 2, 3, 4, 5, 15
+```
+
+## 6
+
+Which fit provided the best fit, and give support to your response.
